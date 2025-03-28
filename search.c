@@ -81,7 +81,7 @@ static int Quiescence(int alpha, int beta, S_BOARD *pos, S_SEARCHINFO *info) {
 	}
 	info->nodes++;
 
-	if(IsRepetition(pos) || pos->fiftyMove >= 100) {
+	if((IsRepetition(pos) || pos->fiftyMove >= 100)&& pos->ply) {
 		return 0;
 	}
 	if(pos->ply > MAXDEPTH - 1) {
@@ -145,12 +145,8 @@ static int Quiescence(int alpha, int beta, S_BOARD *pos, S_SEARCHINFO *info) {
 
 static int AlphaBeta(int alpha, int beta, int depth, S_BOARD *pos, S_SEARCHINFO *info, int DoNull) {
 
-	int MoveNum = 0;
-	int Legal = 0;
-	int OldAlpha = alpha;
-	int BestMove = NOMOVE;
-	int Score = -INFINITE; 
-	int PvMove = ProbePvTable(pos);
+	/*
+	*/
 	ASSERT(CheckBoard(pos));
 
 
@@ -163,7 +159,8 @@ static int AlphaBeta(int alpha, int beta, int depth, S_BOARD *pos, S_SEARCHINFO 
 	}
 
 	info->nodes++;	
-	if(IsRepetition(pos) || pos->fiftyMove >= 100) { //its a draw
+
+	if((IsRepetition(pos) || pos->fiftyMove >= 100) && pos->ply) { //its a draw
 		return 0;
 	}
 
@@ -171,9 +168,21 @@ static int AlphaBeta(int alpha, int beta, int depth, S_BOARD *pos, S_SEARCHINFO 
 		return EvalPosition(pos);
 	}
 
+	int InCheck = SqAttacked(pos->KingSq[pos->side], pos->side^1, pos);
+
+	if (InCheck == TRUE) {
+		depth++;
+	}
+
 	S_MOVELIST list[1];
     GenerateAllMoves(pos,list);
 
+	int MoveNum = 0;
+	int Legal = 0;
+	int OldAlpha = alpha;
+	int BestMove = NOMOVE;
+	int Score = -INFINITE; 
+	int PvMove = ProbePvTable(pos);
     
 
 	if (PvMove != NOMOVE) {
@@ -223,7 +232,7 @@ static int AlphaBeta(int alpha, int beta, int depth, S_BOARD *pos, S_SEARCHINFO 
 	}
 
 	if(Legal == 0) {
-		if(SqAttacked(pos->KingSq[pos->side], pos->side^1, pos)) {
+		if(InCheck) {
 			return -MATE + pos->ply;
 		} else {
 			return 0;
@@ -238,40 +247,66 @@ static int AlphaBeta(int alpha, int beta, int depth, S_BOARD *pos, S_SEARCHINFO 
 }
 
 
-
 void SearchPosition(S_BOARD *pos, S_SEARCHINFO *info) {
-//iterative deepening (alpha beta...)
-// for depth = 1 to maxdepth
-	//search alpha beta....
-	//next depth
 
 	int bestMove = NOMOVE;
 	int bestScore = -INFINITE;
 	int currentDepth = 0;
 	int pvMoves = 0;
 	int pvNum = 0;
+
 	ClearForSearch(pos,info);
+	
 
-	for( currentDepth = 1; currentDepth <= info->depth; ++currentDepth ) {
-								//alpha		//beta
-		bestScore = AlphaBeta(-INFINITE, INFINITE, currentDepth, pos, info, TRUE);
+	//printf("Search depth:%d\n",info->depth);
 
-		if(info->stopped == TRUE) {
-			break;
+	// iterative deepening
+	if(bestMove == NOMOVE) {
+		for( currentDepth = 1; currentDepth <= info->depth; ++currentDepth ) {
+								// alpha	 beta
+			bestScore = AlphaBeta(-INFINITE, INFINITE, currentDepth, pos, info, TRUE);
+
+			if(info->stopped == TRUE) {
+				break;
+			}
+
+			pvMoves = GetPvLine(currentDepth, pos);
+			bestMove = pos->PvArray[0];
+			if(info->GAME_MODE == UCIMODE) {
+				printf("info score cp %d depth %d nodes %ld time %d ",
+					bestScore,currentDepth,info->nodes,GetTimeMs()-info->starttime);
+			} else if(info->GAME_MODE == XBOARDMODE && info->POST_THINKING == TRUE) {
+				printf("%d %d %d %ld ",
+					currentDepth,bestScore,(GetTimeMs()-info->starttime)/10,info->nodes);
+			} else if(info->POST_THINKING == TRUE) {
+				printf("score:%d depth:%d nodes:%ld time:%d(ms) ",
+					bestScore,currentDepth,info->nodes,GetTimeMs()-info->starttime);
+			}
+			if(info->GAME_MODE == UCIMODE || info->POST_THINKING == TRUE) {
+				pvMoves = GetPvLine(currentDepth, pos);
+				if(!info->GAME_MODE == XBOARDMODE) {
+					printf("pv");
+				}
+				for(pvNum = 0; pvNum < pvMoves; ++pvNum) {
+					printf(" %s",PrMove(pos->PvArray[pvNum]));
+				}
+				printf("\n");
+			}
+
+			//printf("Hits:%d Overwrite:%d NewWrite:%d Cut:%d\nOrdering %.2f NullCut:%d\n",pos->HashTable->hit,pos->HashTable->overWrite,pos->HashTable->newWrite,pos->HashTable->cut,
+			//(info->fhf/info->fh)*100,info->nullCut);
 		}
-		pvMoves = GetPvLine(currentDepth, pos);
-		bestMove = pos->PvArray[0];
-		printf("Depth:%d score:%d move:%s nodes:%ld", currentDepth, bestScore, PrMove(bestMove), info->nodes);
-
-
-		pvMoves = GetPvLine(currentDepth, pos);
-		printf("pv");
-		for(pvNum = 0; pvNum<pvMoves; pvNum++) {
-			printf(" %s", PrMove(pos->PvArray[pvNum]));
-		}
-		printf("\n");
 	}
-	printf("bestmove %s\n", PrMove(bestMove));
+
+	if(info->GAME_MODE == UCIMODE) {
+		printf("bestmove %s\n",PrMove(bestMove));
+	} else if(info->GAME_MODE == XBOARDMODE) {
+		printf("move %s\n",PrMove(bestMove));
+		MakeMove(pos, bestMove);
+	} else {
+		printf("\n\n***!! Vice makes move %s !!***\n\n",PrMove(bestMove));
+		MakeMove(pos, bestMove);
+		PrintBoard(pos);
+	}
+
 }
-
-

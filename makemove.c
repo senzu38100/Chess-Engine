@@ -170,6 +170,10 @@ int MakeMove(S_BOARD *pos, int move) {
 	int from = FROMSQ(move);
     int to = TOSQ(move);
     int side = pos->side;
+	int pce = pos->pieces[from];
+	if (pce == EMPTY || PieceCol[pce] != side) {
+		return FALSE;
+	}
 	
 	ASSERT(SqOnBoard(from));
     ASSERT(SqOnBoard(to));

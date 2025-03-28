@@ -6,6 +6,7 @@ char RankChar[] = "12345678"; //for ranks
 char FileChar[] = "abcdefgh"; //for files
 
 
+
 int PieceBig[13] = { FALSE, FALSE, TRUE, TRUE, TRUE, TRUE, TRUE, FALSE, TRUE, TRUE, TRUE, TRUE, TRUE }; //knigh bishop rook queen king are big pieces
 int PieceMaj[13] = { FALSE, FALSE, FALSE, FALSE, TRUE, TRUE, TRUE, FALSE, FALSE, FALSE, TRUE, TRUE, TRUE }; // king queen rook (black and white)
 int PieceMin[13] = { FALSE, FALSE, TRUE, TRUE, FALSE, FALSE, FALSE, FALSE, TRUE, TRUE, FALSE, FALSE, FALSE };
@@ -31,5 +32,3 @@ int PieceSlides[13] = { FALSE, FALSE, FALSE, TRUE, TRUE, TRUE, FALSE, FALSE, FAL
 // 8	,	9	,	10	,	11	,	12	,	13	,	14	,	15	,
 // 0	,	1	,	2	,	3	,	4	,	5	,	6	,	7
 // };
-
-

@@ -124,4 +124,11 @@ int EvalPosition(const S_BOARD *pos) {
 		score -= RookTable[MIRROR64(SQ64(sq))];
 
 	}	
+	printf("Found a %d on %d, score: %d\n", pce, sq, score);
+	if (pos->side == WHITE) {
+		return score;
+	} else {
+		return -score;
+	}
+
 }
