@@ -1,4 +1,4 @@
-# Chess Engine (C)
+# Chess Engine in C
 
 Chess engine written in C, based on bitboards and the UCI protocol.  
 The project can generate legal moves, evaluate positions, and play games through any UCI-compatible interface.
